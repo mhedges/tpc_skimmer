@@ -5,9 +5,8 @@
 #include <TCanvas.h>
 #include <iostream>
 
-//void skimmer::Loop()
-//void skimmer::Loop(TString FileName, TString OutputName)
-void skimmer(TString FileName, TString OutputName)
+void skimmer::Loop(TString FileName, TString OutputName)
+//void skimmer(TString FileName, TString OutputName)
 {
 //   In a ROOT session, you can do:
 //      Root > .L skimmer.C
@@ -41,11 +40,13 @@ void skimmer(TString FileName, TString OutputName)
    // Get the TTree
    TTree *dtr = (TTree*)df.Get("tree");
 
-   skimmer *event = new skimmer;
+   class skimmer* event; 
 
    //TFile *ofile = new TFile("tpc_data.root", "RECREATE");
+
    TFile *ofile = new TFile(OutputName, "RECREATE");
    TTree *tr = new TTree("tr","TPC Event Data");
+
    // Initialize the TTree
    event->Init(dtr);
 
@@ -54,8 +55,8 @@ void skimmer(TString FileName, TString OutputName)
 
    // Make new TTree with relevant data
    
-   Int_t npoints, time_range, tot_sum; 
-   Int_t getentry;
+   int npoints, time_range, tot_sum; 
+   int getentry;
 
    //int nrows = 336;
    //int ncol = 80;
@@ -181,7 +182,14 @@ void skimmer(TString FileName, TString OutputName)
 //   }
 }
 
-//int main()
-//{
-//  skimmer::Loop(char* argv[0], char* argv[1]);
-//}
+int main(int argc, char *argv[])
+{
+  cout << "First argv is: " << argv[0] << endl;
+  cout << "Analyzing data from: " << argv[1] << endl;
+  skimmer ana;
+  //ana.Loop("a", "b");
+  ana.Loop(argv[2], argv[3]);
+  //skimmer::Loop(char* argv[0], char* argv[1]);
+  //skimmer((char*) argv[0], (char)* argv[1]);
+  return 1;
+}
