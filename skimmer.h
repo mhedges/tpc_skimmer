@@ -11,6 +11,7 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
+#include <TTree.h>
 
 // Header file for the classes stored in the TTree if any.
 #include <TObject.h>
@@ -19,10 +20,10 @@
 using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
-   const Int_t kMaxMicrotpcDataHits = 10000;
-   const Int_t kMaxMicrotpcMetaHits = 1;
-   const Int_t kMaxMicrotpcRecoTracks = 1;
-   const Int_t kMaxm_elements = 1;
+   const Int_t kMaxMicrotpcDataHits = 1000000;
+   const Int_t kMaxMicrotpcMetaHits = 1000000;
+   const Int_t kMaxMicrotpcRecoTracks = 1000000;
+   const Int_t kMaxm_elements = 1000000;
 
 class skimmer {
 public :
@@ -189,7 +190,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop();
+   virtual void     Loop(TString, TString);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 };
