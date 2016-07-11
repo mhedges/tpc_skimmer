@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Mon Jul 11 08:52:38 2016 by ROOT version 5.34/34
+// Wed May 25 17:20:39 2016 by ROOT version 5.34/34
 // from TTree tree/tree
-// found on file: tpc_data_1460214023.root
+// found on file: tpc4_th50_data_1463360400.root
 //////////////////////////////////////////////////////////
 
 #ifndef skimmer_h
@@ -11,6 +11,7 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
+#include <TTree.h>
 
 // Header file for the classes stored in the TTree if any.
 #include <TObject.h>
@@ -19,10 +20,10 @@
 using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
-   const Int_t kMaxMicrotpcDataHits = 30000;
-   const Int_t kMaxMicrotpcMetaHits = 1;
-   const Int_t kMaxMicrotpcRecoTracks = 1;
-   const Int_t kMaxm_elements = 1;
+   const Int_t kMaxMicrotpcDataHits = 1000000;
+   const Int_t kMaxMicrotpcMetaHits = 1000000;
+   const Int_t kMaxMicrotpcRecoTracks = 1000000;
+   const Int_t kMaxm_elements = 1000000;
 
 class skimmer {
 public :
@@ -189,7 +190,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop(TString FileName, TString OutputName);
+   virtual void     Loop(TString, TString);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 };
@@ -202,9 +203,9 @@ skimmer::skimmer(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("tpc_data_1460214023.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("tpc4_th50_data_1463360400.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("tpc_data_1460214023.root");
+         f = new TFile("tpc4_th50_data_1463360400.root");
       }
       f->GetObject("tree",tree);
 
