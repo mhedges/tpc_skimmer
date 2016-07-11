@@ -69,10 +69,10 @@ void skimmer::Loop(TString FileName, TString OutputName)
    int ncol = 80;
    int kMaxHits= nrows * ncol;
 
-   int row[26880];
-   int col[26880];
-   int tot[26880];
-   int bcid[26880];
+   int row[30000];
+   int col[30000];
+   int tot[30000];
+   int bcid[30000];
 
    float par_fit[5];
    float par_fit_err[5];
@@ -132,7 +132,8 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	   //}
 	   //}
 	  
-	  for (int pixn=0; pixn<npoints;pixn++){
+	  int pixn=0;
+	  for (pixn; pixn<npoints;pixn++){
 	    row[pixn]=MicrotpcDataHits_m_row[pixn];
 	    col[pixn]=MicrotpcDataHits_m_column[pixn];
 	    bcid[pixn]=MicrotpcDataHits_m_BCID[pixn];
@@ -141,14 +142,14 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	    //std::cout << "Column number is " << col[pixn] << std::endl;
 	  }
 	  tr->Fill();
-
-      /* Debug info */
-	  //if (jentry == 2) {
-	  //  cout << "Currently at event " << jentry << "\n";
-	  //  for (int i=0;i<MicrotpcDataHits_; i++){
-	  //    evt->Fill(MicrotpcDataHits_m_column[i],MicrotpcDataHits_m_row[i],MicrotpcDataHits_m_TOT[i]);
-	  //  }
-	  //}
+//
+//      /* Debug info */
+//	  //if (jentry == 2) {
+//	  //  cout << "Currently at event " << jentry << "\n";
+//	  //  for (int i=0;i<MicrotpcDataHits_; i++){
+//	  //    evt->Fill(MicrotpcDataHits_m_column[i],MicrotpcDataHits_m_row[i],MicrotpcDataHits_m_TOT[i]);
+//	  //  }
+//	  //}
    }
    tr->Write();
    ofile->Write();
