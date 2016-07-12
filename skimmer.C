@@ -1,8 +1,16 @@
+/******************************************************************************
+ * Program: TPC Phase I data skimmer
+ * Author: Michael Hedges
+ * Purpose: Skim Igal's BASF2 output for relevant data to be stored in BEAST
+ * global ntuples for analysis
+******************************************************************************/
+
 #define skimmer_cxx
 #include "skimmer.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
+#include <iostream>
 
 //void skimmer::Loop()
 //
@@ -67,16 +75,18 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
    int nrows = 336;
    int ncol = 80;
-   int kMaxHits= nrows * ncol;
+   int kMaxHits = nrows * ncol;
 
    int row[30000];
    int col[30000];
    int tot[30000];
    int bcid[30000];
 
-   float par_fit[5];
-   float par_fit_err[5];
-   float chi2, t_length, theta, phi;
+   int hitside[4];
+
+   float par_fit[6];
+   float par_fit_err[6];
+   float chi2, t_length, theta, phi, sum_e;
 
    double tstamp;
    
@@ -87,19 +97,21 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("tot",&tot,"tot[npoints]/I");
    tr->Branch("tstamp",&tstamp,"tstamp/D");
    tr->Branch("tot_sum",&tot_sum,"tot_sum/I");
+   tr->Branch("sum_e",&sum_e,"sum_e/F");
    tr->Branch("time_range",&time_range,"time_range/I");
    tr->Branch("chi2",&chi2,"chi2/F");
    tr->Branch("t_length",&t_length,"t_length/F");
    tr->Branch("theta",&theta,"theta/F");
    tr->Branch("phi",&phi,"phi/F");
-   tr->Branch("par_fit",&par_fit,"par_fit[5]/F");
-   tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[5]/F");
+   tr->Branch("par_fit",&par_fit,"par_fit[6]/F");
+   tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/F");
+   tr->Branch("hitside",&hitside,"hitside[4]/I");
 
    int nentries = dtr->GetEntriesFast();
 
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
-      //if (jentry %1000 == 0) cout << "Event Counter: " << jentry << endl;
+      if (jentry %10000 == 0) cout << "Event Counter: " << jentry << endl;
 
       Long64_t ientry = LoadTree(jentry);
 
@@ -116,7 +128,12 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  t_length = MicrotpcRecoTracks_m_trl[0];
 	  theta = MicrotpcRecoTracks_m_theta[0];
 	  phi = MicrotpcRecoTracks_m_phi[0];
+      sum_e = MicrotpcRecoTracks_m_esum[0];
 	  
+	  for (int nsides=0; nsides<4; nsides++){
+		 hitside[nsides] = MicrotpcRecoTracks_m_side[0][nsides];
+	  }
+
 	  for (int npars=0; npars<6;npars++){
 	    par_fit[npars]=MicrotpcRecoTracks_m_parFit[0][npars];
 	    par_fit_err[npars]=MicrotpcRecoTracks_m_parFit_err[0][npars];
@@ -132,8 +149,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	   //}
 	   //}
 	  
-	  int pixn=0;
-	  for (pixn; pixn<npoints;pixn++){
+	  for (int pixn=0; pixn<npoints;pixn++){
 	    row[pixn]=MicrotpcDataHits_m_row[pixn];
 	    col[pixn]=MicrotpcDataHits_m_column[pixn];
 	    bcid[pixn]=MicrotpcDataHits_m_BCID[pixn];

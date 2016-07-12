@@ -1,6 +1,9 @@
 import glob
 import os
 
+### Debug info: Implementing tools to measure time to completion
+import timeit
+
 ### This was an attempt to recreate the NTP/TPC subdirectory structure, but it
 ### wasn't worth the hassle.
 #ifpath = '/ghi/fs01/belle2/bdata/group/detector/BEAST/data/NTP/TPC'
@@ -18,10 +21,15 @@ import os
 #            raw_input('good so far?')
 #    print raw_input('Going on to next subdir, should be a date')
 
+start = timeit.default_timer()
+
 ifpath = '/ghi/fs01/belle2/bdata/group/detector/BEAST/data/NTP/TPC'
-ofpath = '/home/belle/mhedges/tpc_skimmer/data/'
+ofpath = '/home/belle/mhedges/beast/phase1/data/tpc_skimmer/data'
 
 good_run = 1
+
+### Debug variables
+counter = 1
 for subdir, dirs, files in os.walk(ifpath):
     for f in files:
         test = subdir.split('/')
@@ -30,6 +38,8 @@ for subdir, dirs, files in os.walk(ifpath):
                 good_run = 0
         if good_run == 0:
             continue
+        if counter >= 5:
+            break
         ifile = os.path.join(subdir, f)
         print ifile
         names=f.split('/')
@@ -37,6 +47,12 @@ for subdir, dirs, files in os.walk(ifpath):
         ofile = str('data/') + str(infile_name[0]) + str('_skim') + str('.root')
         if os.path.isfile(ofile):
             continue
-        os.system('''root -l -q -b 'skimmer.C(FileName="%s", OutputName="%s")' '''
-                % (ifile, ofile))
+        os.system('./skimmer %s %s' % (ifile, ofile))
+        #counter += 1
         #raw_input('good so far?')
+
+stop = timeit.default_timer()
+
+### Print debug info
+#print ''
+#print 'Total run time was: ', stop - start, ' seconds'
