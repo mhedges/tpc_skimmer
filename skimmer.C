@@ -157,6 +157,11 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	    //std::cout << "At pixel number " << pixn << std::endl;
 	    //std::cout << "Column number is " << col[pixn] << std::endl;
 	  }
+
+	  //
+	  //Call fitter 
+	  
+	  
 	  tr->Fill();
 //
 //      /* Debug info */
