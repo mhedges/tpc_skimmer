@@ -23,8 +23,12 @@ import timeit
 
 start = timeit.default_timer()
 
-ifpath = '/ghi/fs01/belle2/bdata/group/detector/BEAST/data/NTP/TPC'
-ofpath = '/home/belle/mhedges/beast/phase1/data/tpc_skimmer/data'
+### Paths for KEKCC
+#ifpath = '/ghi/fs01/belle2/bdata/group/detector/BEAST/data/NTP/TPC'
+#ofpath = '/home/belle/mhedges/beast/phase1/data/tpc_skimmer/data'
+
+ifpath = '/Volumes/Hedges_stuff/beast_phase1/data/TPC/kekcc'
+ofpath = '/Volumes/Hedges_stuff/beast_phase1/data/TPC/tpc_skimmer/data'
 
 good_run = 1
 

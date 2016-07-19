@@ -17,8 +17,6 @@
 #include <TObject.h>
 #include <TClonesArray.h>
 
-using namespace std;
-
 // Fixed size dimensions of array or collections stored in the TTree if any.
    const Int_t kMaxMicrotpcDataHits = 30000;
    const Int_t kMaxMicrotpcMetaHits = 1;
