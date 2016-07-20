@@ -20,7 +20,7 @@
 #include <TVector3.h>
 #include <TVirtualFitter.h>
 
-#include "data_distributor.h"
+//#include "data_distributor.h"
 
 #define DEBUG 0
 #define NROWS 336
@@ -30,10 +30,10 @@
 
 
 //data_distributor *m_distributor = data_distributor::instance();
-#define m_distributor (data_distributor::instance())
+//#define m_distributor (data_distributor::instance())
 
 
-data_distributor::event_display_t evtDisplay;
+//data_distributor::event_display_t evtDisplay;
 
 struct timeval timeMark;
 TGraph2D *m_gr;
