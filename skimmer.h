@@ -33,50 +33,36 @@ using namespace std;
    const Int_t kMaxm_elements = 1;
 
 
-struct trackInfo {
-  float x[MAXHITS];
-  float y[MAXHITS];
-  float z[MAXHITS];
-  float x_min, x_max, y_min, y_max;
-  int iTrack; 
-  int bcid_min, bcid_max;
-  int x_min_idx, y_min_idx, x_max_idx, y_max_idx;
-};
-
-struct fitInfo {
-  unsigned char  col[MAXHITS]; // unsigned char (unsigned char )
-  unsigned short row[MAXHITS]; //unsigned short (unsigned short)
-  unsigned char  tot[MAXHITS]; //unsigned char  (unsigned char )
-  unsigned char  bcid[MAXHITS]; //unsigned char  (unsigned char )
-  double timestamp;
-  unsigned int npoints;
-  float pars[5];
-  float errs[5];
-  float length;
-  //  float energy; 
-  float impact_pars[4]; //x=0, x=end, y=0, y=end
-  float theta; // radian
-  float phi;
-  unsigned int sumTOT;
-  unsigned int evtNum; // Not doing anything with this right now
-  bool alphaFlag;
-  bool neutronFlag;
-  unsigned short hitside;
-  unsigned short iTPC;
-};
-
-
-void fitTrack();
-void getTrackInfo();
-void getPID();
-unsigned short getHitside();
-void SumDistance2(int &, double *, double & sum, double * par, int );
-
-void SumDistance2(int &, double *, double & sum, double * par, int );
-double distance2(double px,double py,double pz, double *p);
-void writeNtuples();
-
 class skimmer {
+private :
+	int npoints, time_range, tot_sum; 
+	int getentry;
+
+	int nrows = 336;
+	int ncol = 80;
+	int kMaxHits = nrows * ncol;
+
+	int row[30000];
+	int col[30000];
+	int tot[30000];
+	int bcid[30000];
+
+	int hitside[4];
+
+	float impact_pars[4]; //x=0, x=end, y=0, y=end
+
+	float par_fit[6];
+	float par_fit_err[6];
+	float chi2, t_length, theta, phi, sum_e;
+
+	double tstamp;
+
+	void fitTrack(TGraph2D *);
+	void getTrackInfo();
+	void getPID();
+	unsigned short getHitside();
+	static void SumDistance2(int &, double *, double & sum, double * par, int );
+	static double distance2(double px,double py,double pz, double *p);
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -254,9 +240,9 @@ skimmer::skimmer(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("tpc_data_1460214023.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("tpc4_th50_data_1463360400.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("tpc_data_1460214023.root");
+         f = new TFile("tpc4_th50_data_1463360400.root");
       }
       f->GetObject("tree",tree);
 

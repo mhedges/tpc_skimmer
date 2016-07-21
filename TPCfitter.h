@@ -46,8 +46,6 @@ void getTrackInfo();
 void getPID();
 unsigned short getHitside();
 void SumDistance2(int &, double *, double & sum, double * par, int );
-
-void SumDistance2(int &, double *, double & sum, double * par, int );
 double distance2(double px,double py,double pz, double *p);
 void writeNtuples();
 //void writeNtuples_thread();
