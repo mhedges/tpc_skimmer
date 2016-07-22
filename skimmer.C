@@ -250,7 +250,7 @@ void skimmer::getTrackInfo(){
       c_inside = 1;
     
   }
-  nedges = c_row_up + c_row_dw + c_col_up + c_col_dw;
+  nedges = c_row_up + c_row_dw +c_col_up + c_col_dw;
   ncorners = c_row_up_col_up + c_row_up_col_dw + c_row_dw_col_up + c_row_dw_col_dw;
   nedges = nedges - ncorners;
   
@@ -264,6 +264,8 @@ void skimmer::getTrackInfo(){
   if ( nedges >= 2 && c_inside == 1){
     nedges = 2;
   }
+
+  hitside = (unsigned short)(c_row_up*1000 + c_row_dw*100 + c_col_up*10 + c_col_dw);
 
 }
 //
@@ -305,8 +307,9 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("phi",&phi,"phi/F");
    tr->Branch("par_fit",&par_fit,"par_fit[6]/F");
    tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/F");
-   tr->Branch("hitside",&hitside,"hitside[4]/I");
+   tr->Branch("hitside",&hitside,"hitside/s");
    tr->Branch("impact_pars",&impact_pars,"impact_pars[4]/F");
+   tr->Branch("distances",&distances,"distances[10000]/D");
 
    int nentries = dtr->GetEntriesFast();
 
@@ -339,22 +342,8 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		//cout << col[pixn] << row[pixn] << bcid[pixn] << endl;
 		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
 		//m_gr->SetPoint(pixn, x, y, z);
-	
-	
-	//for (int nsides=0; nsides<4; nsides++){
-	//   hitside[nsides] = MicrotpcRecoTracks_m_side[0][nsides];
-	//}
-	
-	//for (int npars=0; npars<6;npars++){
-	//  par_fit[npars]=MicrotpcRecoTracks_m_parFit[0][npars];
-	//  par_fit_err[npars]=MicrotpcRecoTracks_m_parFit_err[0][npars];
-	//}
-	
-	
       }
       
-      //m_gr = new TGraph2D();
-
       double x,y,z;
       for (int pixn=0; pixn<npoints;pixn++){
 		x = static_cast<double>(col[pixn]*250.0); 
@@ -367,6 +356,23 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  
 	  //Call fitter 
 	  fitTrack();
+
+	  
+	  for (int i  = 0; i < npoints; ++i) {
+		x = static_cast<double>(col[i]*250.0); 
+		y = static_cast<double>(row[i]*50.0);
+		z = static_cast<double>(bcid[i]*250.0);
+		double d = distance2(x,y,z,par_fit);
+		distances[i] = d;
+	  }
+	  
+	  //for (int pixn = 0; pixn < npoints; ++pixn) {
+	  //  x = static_cast<double>(col[pixn]*250.0); 
+	  //  y = static_cast<double>(row[pixn]*50.0);
+	  //  z = static_cast<double>(bcid[pixn]*250.0);
+	  //  double d = distance2(x[pixn],y[pixn],z[pixn],par_fit);
+	  //  distances[pixn] = d;
+	  //}
 
 	  //Fill tree
 	  tr->Fill();
@@ -384,7 +390,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  //Delete track
 	  m_gr->Delete();
 
-	  //if (jentry > 999) break;
+	  if (jentry > 999) break;
    }
    cout << "Does it make it this far?" << endl;
    tr->Write();

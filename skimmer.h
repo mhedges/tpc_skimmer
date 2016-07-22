@@ -47,13 +47,15 @@ private :
 	int tot[30000];
 	int bcid[30000];
 
-	int hitside[4];
+	unsigned short hitside;
 
 	float impact_pars[4]; //x=0, x=end, y=0, y=end
 
-	float par_fit[6];
-	float par_fit_err[6];
+	double par_fit[6];
+	double par_fit_err[6];
 	float chi2, t_length, theta, phi, sum_e;
+	
+	double distances[10000];
 
 	double tstamp;
 
