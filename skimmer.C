@@ -42,7 +42,9 @@
 float weight[3] = {1., 1., 1.};
 int iTPC=0;
 
-void skimmer::fitTrack(TGraph2D *m_gr) {
+TGraph2D *m_gr;
+
+void skimmer::fitTrack() {
   /* Find long aspect of track */
   int x_max_index, y_max_index;
   int x_min_index, y_min_index;
@@ -51,14 +53,17 @@ void skimmer::fitTrack(TGraph2D *m_gr) {
   npoints = m_gr->GetN();
   x_vals = m_gr->GetX(); y_vals = m_gr->GetY(); z_vals = m_gr->GetZ();
 
+  
   for (int ii=0; ii<npoints; ii++){
+	  //cout << "\n\n\n" << x_vals[ii] << "    " << y_vals[ii] << "    " << z_vals[ii] << endl;
+
 	if ( x_vals[ii] == m_gr->GetXmax() )
 	  x_max_index = ii;
 	else if ( x_vals[ii] == m_gr->GetXmin() )
 	  x_min_index = ii;
 	if ( y_vals[ii] == m_gr->GetYmax() )
 	  y_max_index = ii;
-	else if ( x_vals[ii] == m_gr->GetYmin() )
+	else if ( y_vals[ii] == m_gr->GetYmin() )
 	  y_min_index = ii;
   }
 
@@ -87,6 +92,7 @@ void skimmer::fitTrack(TGraph2D *m_gr) {
   TVector3 temp_vector3 (x_vals[p_max_idx]-x_vals[p_min_idx],
 			 y_vals[p_max_idx]-y_vals[p_min_idx],
 			 z_vals[p_max_idx]-z_vals[p_min_idx]);
+  
   double init_theta = temp_vector3.Theta();
   double init_phi   = temp_vector3.Phi();
 
@@ -114,6 +120,11 @@ void skimmer::fitTrack(TGraph2D *m_gr) {
   getTrackInfo();
   //getPID(); // Set PID flags
 
+  double amin, edm, errdef;
+  int npar, nparx;
+  min -> GetStats(amin, edm, errdef, npar, nparx);
+
+  chi2 = amin/(double)(npoints-npar);
   /* Second arg comes from defs in constants.h */
 
   delete min;
@@ -189,6 +200,71 @@ void skimmer::getTrackInfo(){
     if ( iPos < 2 ) impact_pars[iPos] = y_point;
     else impact_pars[iPos] = x_point; 
   } 
+
+  // Get Hitside information
+  int cut_dim = 500; //um (it should be 250*integer)
+  int set_edge_row_up = 335-cut_dim/250*5, set_edge_row_dw = cut_dim/250*5;
+  int set_edge_col_up = 79-cut_dim/250, set_edge_col_dw = cut_dim/250;
+  
+  int c_row_up = 0, c_row_dw = 0, c_col_up = 0, c_col_dw = 0;
+  int c_row_up_col_up = 0, c_row_up_col_dw = 0, c_row_dw_col_up = 0, c_row_dw_col_dw = 0;
+  int c_inside = 0;
+  
+  int ncorners = 0;
+  int check_edge = 0, nhits_edge = 0;
+  int icol, irow;
+  int nedges;
+
+  for (int iPoint = 0; iPoint < npoints; iPoint++){
+    check_edge = 0;
+    icol = col[iPoint];
+    irow = row[iPoint];
+    if ( irow > set_edge_row_up ) {
+      c_row_up = 1;
+      check_edge = 1;
+    } 
+    if ( irow < set_edge_row_dw ) {
+      c_row_dw = 1;
+      check_edge = 1;
+    } 
+    if ( icol > set_edge_col_up ) {
+      c_col_up = 1;
+      check_edge = 1;
+    }
+    if ( icol < set_edge_col_dw ) {
+      c_col_dw = 1;
+      check_edge = 1;
+    }
+    
+    if ( check_edge == 1)  nhits_edge += 1;
+    
+    if ( irow > set_edge_row_up && icol > set_edge_col_up ) 
+      c_row_up_col_up = 1;
+    if ( irow > set_edge_row_up && icol < set_edge_col_dw ) 
+      c_row_up_col_dw = 1;
+    if ( irow < set_edge_row_dw && icol > set_edge_col_up ) 
+      c_row_dw_col_up = 1;
+    if ( irow < set_edge_row_dw && icol < set_edge_col_dw ) 
+      c_row_dw_col_dw = 1;
+    if (! ( irow < set_edge_row_dw || irow > set_edge_row_up || icol < set_edge_col_dw || icol > set_edge_col_up ) )
+      c_inside = 1;
+    
+  }
+  nedges = c_row_up + c_row_dw + c_col_up + c_col_dw;
+  ncorners = c_row_up_col_up + c_row_up_col_dw + c_row_dw_col_up + c_row_dw_col_dw;
+  nedges = nedges - ncorners;
+  
+  if ( c_inside == 1 ){
+    if ( c_row_up_col_up+c_row_dw_col_up > 1 || 
+	 c_row_up_col_dw+c_row_dw_col_dw > 1 || 
+	 c_row_dw_col_up+c_row_dw_col_dw > 1 || 
+	 c_row_up_col_up+c_row_up_col_dw > 1 ) 
+      nedges += 1;
+  }
+  if ( nedges >= 2 && c_inside == 1){
+    nedges = 2;
+  }
+
 }
 //
 void skimmer::Loop(TString FileName, TString OutputName)
@@ -210,7 +286,8 @@ void skimmer::Loop(TString FileName, TString OutputName)
    dtr->SetBranchStatus("*",1);
 
    //// Make TGraph for fitting the event
-   TGraph2D *m_gr;
+   //   TGraph2D *m_gr;
+
    //
    //// Make new TTree with relevant data
    tr->Branch("npoints",&npoints,"npoints/I");
@@ -233,9 +310,13 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
    int nentries = dtr->GetEntriesFast();
 
+   cout << "\n\n\n" << "Number of entries = " << nentries << "\n\n\n" << endl;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
-      if (jentry %10000 == 0) cout << "Event Counter: " << jentry << endl;
+	  m_gr = new TGraph2D();
+
+      if (jentry %100 == 0) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
+      //if (jentry > 17610) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
 
       Long64_t ientry = LoadTree(jentry);
 
@@ -245,50 +326,67 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  tstamp = MicrotpcMetaHits_m_ts_start[0][0];
 	  tot_sum = MicrotpcRecoTracks_m_totsum[0];
 	  time_range = MicrotpcRecoTracks_m_time_range[0];
-	  chi2 = MicrotpcRecoTracks_m_chi2[0];
+	  //chi2 = MicrotpcRecoTracks_m_chi2[0];
 	  t_length = MicrotpcRecoTracks_m_trl[0];
 	  theta = MicrotpcRecoTracks_m_theta[0];
 	  phi = MicrotpcRecoTracks_m_phi[0];
       sum_e = MicrotpcRecoTracks_m_esum[0];
 	  
-	  for (int pixn=0; pixn<npoints;pixn++){
-	    row[pixn]=MicrotpcDataHits_m_row[pixn];
-	    col[pixn]=MicrotpcDataHits_m_column[pixn];
-	    bcid[pixn]=MicrotpcDataHits_m_BCID[pixn];
-        cout << col[pixn] << row[pixn] << bcid[pixn] << endl;
-	    tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
+      for (int pixn=0; pixn<npoints;pixn++){
+		row[pixn]=static_cast<int>(MicrotpcDataHits_m_row[pixn]);
+		col[pixn]=static_cast<int>(MicrotpcDataHits_m_column[pixn]);
+		bcid[pixn]=static_cast<int>(MicrotpcDataHits_m_BCID[pixn]);
+		//cout << col[pixn] << row[pixn] << bcid[pixn] << endl;
+		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
 		//m_gr->SetPoint(pixn, x, y, z);
-	  
+	
+	
+	//for (int nsides=0; nsides<4; nsides++){
+	//   hitside[nsides] = MicrotpcRecoTracks_m_side[0][nsides];
+	//}
+	
+	//for (int npars=0; npars<6;npars++){
+	//  par_fit[npars]=MicrotpcRecoTracks_m_parFit[0][npars];
+	//  par_fit_err[npars]=MicrotpcRecoTracks_m_parFit_err[0][npars];
+	//}
+	
+	
+      }
+      
+      //m_gr = new TGraph2D();
 
-	  //for (int nsides=0; nsides<4; nsides++){
-	  //   hitside[nsides] = MicrotpcRecoTracks_m_side[0][nsides];
-	  //}
-
-	  //for (int npars=0; npars<6;npars++){
-	  //  par_fit[npars]=MicrotpcRecoTracks_m_parFit[0][npars];
-	  //  par_fit_err[npars]=MicrotpcRecoTracks_m_parFit_err[0][npars];
-	  //}
-
-	   
-	  }
-	  double x,y,z;
-	  for (int pixn=0; pixn<npoints;pixn++){
-		x = col[pixn]; y = row[pixn]; z = bcid[pixn];
-        cout << x << y << z<< endl;
+      double x,y,z;
+      for (int pixn=0; pixn<npoints;pixn++){
+		x = static_cast<double>(col[pixn]*250.0); 
+		y = static_cast<double>(row[pixn]*50.0);
+		z = static_cast<double>(bcid[pixn]*250.0);
+		//cout << "\n\n\n\n\n\n" << x << "\n" << y << "\n" << z << "\n\n\n\n" << endl;
 		m_gr->SetPoint(pixn, x, y, z);
-        cout << "Does it make it this far?" << endl;
-	  }
+		}
 	  //
 	  
 	  //Call fitter 
-	  fitTrack(m_gr);
+	  fitTrack();
 
 	  //Fill tree
 	  tr->Fill();
 
+	  double *x1, *y1, *z1;
+	  x1 = m_gr->GetX();
+	  y1 = m_gr->GetY();
+	  z1 = m_gr->GetZ();
+	  
+	  //for (int n=0; n<npoints; n++){
+	  //cout << "\n\n\n" << x1[n] << "\n\n\n" << y1[n] << "\n\n\n" << z1[n] << endl;
+	  //}
+
+	  
 	  //Delete track
-	  m_gr -> Delete();
+	  m_gr->Delete();
+
+	  //if (jentry > 999) break;
    }
+   cout << "Does it make it this far?" << endl;
    tr->Write();
    ofile->Write();
    ofile->Close();

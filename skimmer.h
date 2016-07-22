@@ -57,7 +57,7 @@ private :
 
 	double tstamp;
 
-	void fitTrack(TGraph2D *);
+	void fitTrack();
 	void getTrackInfo();
 	void getPID();
 	unsigned short getHitside();
