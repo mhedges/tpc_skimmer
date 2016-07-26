@@ -47,22 +47,27 @@ private :
 	int tot[30000];
 	int bcid[30000];
 
+	bool alpha;
+	bool neutron;
+	bool xray;
+	bool other;
+
 	unsigned short hitside;
 
 	float impact_pars[4]; //x=0, x=end, y=0, y=end
 
 	double par_fit[6];
 	double par_fit_err[6];
-	float chi2, t_length, theta, phi, sum_e;
+	double chi2, t_length, theta, phi, sum_e;
 	
-	double distances[10000];
+	double distances[30000];
 
 	double tstamp;
 
 	void fitTrack();
 	void getTrackInfo();
 	void getPID();
-	unsigned short getHitside();
+	void  getHitside();
 	static void SumDistance2(int &, double *, double & sum, double * par, int );
 	static double distance2(double px,double py,double pz, double *p);
 public :

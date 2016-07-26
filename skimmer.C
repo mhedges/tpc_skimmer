@@ -113,7 +113,6 @@ void skimmer::fitTrack() {
     par_fit_err[iPar] = min -> GetParError(iPar);
   }
   
-  double theta, phi;
   phi   = par_fit[4]*180./3.14159;
   theta = par_fit[3]*180./3.14159;
   
@@ -190,7 +189,7 @@ void skimmer::getTrackInfo(){
 
   // Get impact parameters
   //                        x=0    x=end    y=0    y=end
-  float end_positions[4] = {0.0, 250.*80., 0.0, 50.*336.};
+  float end_positions[4] = {0.0, 250. * 80., 0.0, 50. * 336.};
   for (int iPos = 0; iPos < 4; iPos++){
     t_const = 0.0;
     if ( iPos < 2 ) t_const = (end_positions[iPos]-fit_position.X())/unit_direction.X();
@@ -200,7 +199,9 @@ void skimmer::getTrackInfo(){
     if ( iPos < 2 ) impact_pars[iPos] = y_point;
     else impact_pars[iPos] = x_point; 
   } 
+}
 
+void skimmer::getHitside(){
   // Get Hitside information
   int cut_dim = 500; //um (it should be 250*integer)
   int set_edge_row_up = 335-cut_dim/250*5, set_edge_row_dw = cut_dim/250*5;
@@ -287,10 +288,20 @@ void skimmer::Loop(TString FileName, TString OutputName)
    //// Activate all TBranches
    dtr->SetBranchStatus("*",1);
 
-   //// Make TGraph for fitting the event
-   //   TGraph2D *m_gr;
+   //dtr->SetBranchStatus("MicrotpcMetaHits_m_pixNb",1);
+   //dtr->SetBranchStatus("MicrotpcMetaHits_m_ts_start",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_totsum",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_time_range",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_chi2",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_trl",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_theta",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_phi",1);
+   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_esum",1);
+   //dtr->SetBranchStatus("MicrotpcDataHits_m_column",1);
+   //dtr->SetBranchStatus("MicrotpcDataHits_m_row",1);
+   //dtr->SetBranchStatus("MicrotpcDataHits_m_BCID",1);
+   //dtr->SetBranchStatus("MicrotpcDataHits_m_tot",1);
 
-   //
    //// Make new TTree with relevant data
    tr->Branch("npoints",&npoints,"npoints/I");
    tr->Branch("row",&row,"row[npoints]/I");
@@ -302,14 +313,14 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("sum_e",&sum_e,"sum_e/F");
    tr->Branch("time_range",&time_range,"time_range/I");
    tr->Branch("chi2",&chi2,"chi2/F");
-   tr->Branch("t_length",&t_length,"t_length/F");
-   tr->Branch("theta",&theta,"theta/F");
-   tr->Branch("phi",&phi,"phi/F");
-   tr->Branch("par_fit",&par_fit,"par_fit[6]/F");
-   tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/F");
+   tr->Branch("t_length",&t_length,"t_length/D");
+   tr->Branch("theta",&theta,"theta/D");
+   tr->Branch("phi",&phi,"phi/D");
+   tr->Branch("par_fit",&par_fit,"par_fit[6]/D");
+   tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/D");
    tr->Branch("hitside",&hitside,"hitside/s");
    tr->Branch("impact_pars",&impact_pars,"impact_pars[4]/F");
-   tr->Branch("distances",&distances,"distances[10000]/D");
+   tr->Branch("distances",&distances,"distances[npoints]/D");
 
    int nentries = dtr->GetEntriesFast();
 
@@ -329,67 +340,93 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  tstamp = MicrotpcMetaHits_m_ts_start[0][0];
 	  tot_sum = MicrotpcRecoTracks_m_totsum[0];
 	  time_range = MicrotpcRecoTracks_m_time_range[0];
-	  //chi2 = MicrotpcRecoTracks_m_chi2[0];
-	  t_length = MicrotpcRecoTracks_m_trl[0];
-	  theta = MicrotpcRecoTracks_m_theta[0];
-	  phi = MicrotpcRecoTracks_m_phi[0];
       sum_e = MicrotpcRecoTracks_m_esum[0];
 	  
-      for (int pixn=0; pixn<npoints;pixn++){
-		row[pixn]=static_cast<int>(MicrotpcDataHits_m_row[pixn]);
+	  double x,y,z;
+
+      for (int pixn=0; pixn<npoints;pixn++) {
 		col[pixn]=static_cast<int>(MicrotpcDataHits_m_column[pixn]);
+		x = static_cast<double>(col[pixn]*250.0); 
+
+		row[pixn]=static_cast<int>(MicrotpcDataHits_m_row[pixn]);
+		y = static_cast<double>(row[pixn]*50.0);
+
 		bcid[pixn]=static_cast<int>(MicrotpcDataHits_m_BCID[pixn]);
-		//cout << col[pixn] << row[pixn] << bcid[pixn] << endl;
+		z = static_cast<double>(bcid[pixn]*250.0);
+
 		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
-		//m_gr->SetPoint(pixn, x, y, z);
+		
+		m_gr->SetPoint(pixn, x, y, z);
       }
       
-      double x,y,z;
-      for (int pixn=0; pixn<npoints;pixn++){
-		x = static_cast<double>(col[pixn]*250.0); 
-		y = static_cast<double>(row[pixn]*50.0);
-		z = static_cast<double>(bcid[pixn]*250.0);
-		//cout << "\n\n\n\n\n\n" << x << "\n" << y << "\n" << z << "\n\n\n\n" << endl;
-		m_gr->SetPoint(pixn, x, y, z);
-		}
-	  //
+	  getHitside();
 	  
 	  //Call fitter 
-	  fitTrack();
+	  if ((hitside == 11 || hitside == 0) && (npoints > 20)){
+	     fitTrack();
 
-	  
-	  for (int i  = 0; i < npoints; ++i) {
-		x = static_cast<double>(col[i]*250.0); 
-		y = static_cast<double>(row[i]*50.0);
-		z = static_cast<double>(bcid[i]*250.0);
-		double d = distance2(x,y,z,par_fit);
-		distances[i] = d;
+	     bool outliers = false;
+	     std::vector<int> rejects;
+	     std::vector<int>::iterator it;
+
+	     double x2,y2,z2;
+	     for (int i  = 0; i < npoints; ++i) {
+	       x2 = static_cast<double>(col[i]*250.0); 
+	       y2 = static_cast<double>(row[i]*50.0);
+	       z2 = static_cast<double>(bcid[i]*250.0);
+	       double d = distance2(x2,y2,z2,par_fit);
+	       //double d = distance2(x[i],y[i],z[i],par_fit);
+	       distances[i] = d;
+	       if (d > (double)2E6) {
+	         outliers = true;
+	         it = rejects.begin();
+	         rejects.insert(it, i);
+	         //cout << "\n\nOutlier found with distance = " << d << "\n" << endl;
+	       }
+	     }
+	     //double max_d = *std::max_element(distances, distances+10000);
+	     //cout << "\nMax distance in event is : " << max_d << "\n" <<  endl;
+
+	     for (int j = 0; j < rejects.size(); j++) {
+	       int point = (int)rejects[j];
+	       cout << "\n\n\n" << endl; 
+	       cout << "Event number : " << jentry << endl;
+	       cout << "\nOutlier points are: " << rejects[j] << endl; 
+	       cout << "\nDistance2 = " << distances[point] << endl;
+	       cout << "\n\n\n" << endl;
+	     }
+	  }
+
+	  else {
+		 // Reset fit variables to 0 if track is not passed to fit function
+	     chi2 = 0.;
+	     theta = 0.;
+	     phi = 0.;
+
+	     for (int m=0; m<5; m++){
+	   	    par_fit[m] = 0.;
+	   	    par_fit_err[m] = 0.;
+		 }
+
+		 for (int n=0; n<4; n++){
+	   	    impact_pars[n] = 0.;
+		 }
+
+
+	     for (int k=0; k<npoints; k++){
+	        distances[k] = 0.;
+		 }
 	  }
 	  
-	  //for (int pixn = 0; pixn < npoints; ++pixn) {
-	  //  x = static_cast<double>(col[pixn]*250.0); 
-	  //  y = static_cast<double>(row[pixn]*50.0);
-	  //  z = static_cast<double>(bcid[pixn]*250.0);
-	  //  double d = distance2(x[pixn],y[pixn],z[pixn],par_fit);
-	  //  distances[pixn] = d;
-	  //}
-
+	  //cout << "\n\n\n" << "Number of outliers = " << rejects.size() << "\n\n\n" << endl;
+	  
 	  //Fill tree
 	  tr->Fill();
 
-	  double *x1, *y1, *z1;
-	  x1 = m_gr->GetX();
-	  y1 = m_gr->GetY();
-	  z1 = m_gr->GetZ();
-	  
-	  //for (int n=0; n<npoints; n++){
-	  //cout << "\n\n\n" << x1[n] << "\n\n\n" << y1[n] << "\n\n\n" << z1[n] << endl;
-	  //}
-
-	  
 	  //Delete track
 	  m_gr->Delete();
 
+	  //Clear variables
 	  if (jentry > 999) break;
    }
    cout << "Does it make it this far?" << endl;
