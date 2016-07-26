@@ -321,11 +321,20 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("hitside",&hitside,"hitside/s");
    tr->Branch("impact_pars",&impact_pars,"impact_pars[4]/F");
    tr->Branch("distances",&distances,"distances[npoints]/D");
+   tr->Branch("alpha",&alpha,"alpha/I");
+   tr->Branch("neutron",&neutron,"neutron/I");
+   tr->Branch("other",&other,"other/I");
+   //tr->Branch("xray",&xray,"xray/b");
 
    int nentries = dtr->GetEntriesFast();
 
    cout << "\n\n\n" << "Number of entries = " << nentries << "\n\n\n" << endl;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
+
+	  alpha = 0;
+	  neutron = 0;
+	  xray = 0;
+	  other = 0;
 
 	  m_gr = new TGraph2D();
 
@@ -362,12 +371,15 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  getHitside();
 	  
 	  //Call fitter 
-	  if ((hitside == 11 || hitside == 0) && (npoints > 20)){
+	  if ((hitside == 11 || hitside == 0) && (npoints > 20) && (tot_sum > 100)){
 	     fitTrack();
 
 	     bool outliers = false;
 	     std::vector<int> rejects;
 	     std::vector<int>::iterator it;
+
+		 if (hitside == 11) alpha = 1;
+		 if (hitside == 0) neutron = 1;
 
 	     double x2,y2,z2;
 	     for (int i  = 0; i < npoints; ++i) {
@@ -399,6 +411,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
 	  else {
 		 // Reset fit variables to 0 if track is not passed to fit function
+		 other = 1;
 	     chi2 = 0.;
 	     theta = 0.;
 	     phi = 0.;
@@ -426,8 +439,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  //Delete track
 	  m_gr->Delete();
 
-	  //Clear variables
-	  if (jentry > 999) break;
+	  //if (jentry > 999) break;
    }
    cout << "Does it make it this far?" << endl;
    tr->Write();

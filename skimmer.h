@@ -47,10 +47,7 @@ private :
 	int tot[30000];
 	int bcid[30000];
 
-	bool alpha;
-	bool neutron;
-	bool xray;
-	bool other;
+	int alpha, neutron, xray, other;
 
 	unsigned short hitside;
 
