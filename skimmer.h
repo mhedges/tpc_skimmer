@@ -58,7 +58,8 @@ private :
 	double par_fit_err[6];
 	double chi2, t_length, theta, phi, sum_e;
 	
-	double distances[30000];
+	double vectors[30000][3];
+	double c_vector[3];
 
 	double tstamp;
 

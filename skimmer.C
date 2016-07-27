@@ -321,11 +321,14 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/D");
    tr->Branch("hitside",&hitside,"hitside/s");
    tr->Branch("impact_pars",&impact_pars,"impact_pars[4]/F");
-   tr->Branch("distances",&distances,"distances[npoints]/D");
    tr->Branch("alpha",&alpha,"alpha/I");
    tr->Branch("neutron",&neutron,"neutron/I");
    tr->Branch("other",&other,"other/I");
+   tr->Branch("vectors",&vectors,"vectors[npoints][3]/D");
+   tr->Branch("c_vector",&c_vector,"c_vector[3]/D");
    //tr->Branch("xray",&xray,"xray/b");
+
+   //tr->Branch("distances",&distances,"distances[npoints]/D");
 
    int nentries = dtr->GetEntriesFast();
 
@@ -341,7 +344,6 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  m_gr = new TGraph2D();
 
       if (jentry %100 == 0) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
-      //if (jentry > 17610) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
 
       Long64_t ientry = LoadTree(jentry);
 
@@ -355,6 +357,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  
 	  double x,y,z;
 
+	  //TVector3 centroid(0,0,0);
       for (int pixn=0; pixn<npoints;pixn++) {
 		col[pixn]=static_cast<int>(MicrotpcDataHits_m_column[pixn]);
 		x = static_cast<double>(col[pixn]*250.0); 
@@ -368,47 +371,37 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
 		
 		m_gr->SetPoint(pixn, x, y, z);
+
+		vectors[pixn][0] = x;
+		vectors[pixn][1] = y;
+		vectors[pixn][2] = z;
+
+		c_vector[0] += x;
+		c_vector[1] += y;
+		c_vector[2] += z;
       }
-      
+
+	  c_vector[0] /= npoints;
+	  c_vector[1] /= npoints;
+	  c_vector[2] /= npoints;
+
+
 	  getHitside();
 	  
 	  //Call fitter 
 	  if ((hitside == 11 || hitside == 0) && (npoints > 20) && (tot_sum > 100)){
 	     fitTrack();
 
-	     bool outliers = false;
-	     std::vector<int> rejects;
-	     std::vector<int>::iterator it;
-
 		 if (hitside == 11) alpha = 1;
 		 if (hitside == 0) neutron = 1;
 
 	     double x2,y2,z2;
 	     for (int i  = 0; i < npoints; ++i) {
+		   // Calculate x, y, z positions in microns 
 	       x2 = static_cast<double>(col[i]*250.0); 
 	       y2 = static_cast<double>(row[i]*50.0);
 	       z2 = static_cast<double>(bcid[i]*250.0);
-	       double d = distance2(x2,y2,z2,par_fit);
-	       //double d = distance2(x[i],y[i],z[i],par_fit);
-	       distances[i] = d;
-	       if (d > (double)2E6) {
-	         outliers = true;
-	         it = rejects.begin();
-	         rejects.insert(it, i);
-	         //cout << "\n\nOutlier found with distance = " << d << "\n" << endl;
-	       }
-	     }
-	     //double max_d = *std::max_element(distances, distances+10000);
-	     //cout << "\nMax distance in event is : " << max_d << "\n" <<  endl;
-
-	     for (int j = 0; j < rejects.size(); j++) {
-	       int point = (int)rejects[j];
-	       cout << "\n\n\n" << endl; 
-	       cout << "Event number : " << jentry << endl;
-	       cout << "\nOutlier points are: " << rejects[j] << endl; 
-	       cout << "\nDistance2 = " << distances[point] << endl;
-	       cout << "\n\n\n" << endl;
-	     }
+		 }
 	  }
 
 	  else {
@@ -428,9 +421,9 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		 }
 
 
-	     for (int k=0; k<npoints; k++){
-	        distances[k] = 0.;
-		 }
+	     //for (int k=0; k<npoints; k++){
+	     //   distances[k] = 0.;
+		 //}
 	  }
 	  
 	  //cout << "\n\n\n" << "Number of outliers = " << rejects.size() << "\n\n\n" << endl;
@@ -441,9 +434,8 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  //Delete track
 	  m_gr->Delete();
 
-	  if (jentry > 10000) break;
+	  if (jentry > 5000) break;
    }
-   cout << "Does it make it this far?" << endl;
    tr->Write();
    ofile->Write();
    ofile->Close();
