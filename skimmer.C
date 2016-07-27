@@ -104,7 +104,7 @@ void skimmer::fitTrack() {
   min -> SetParameter(3, "theta", pStart[3], 0.0001, 0, 0);
   min -> SetParameter(4, "phi",   pStart[4], 0.0001, 0, 0);
   
-  arglist[0] = 1000; // number of fucntion calls
+  arglist[0] = 1000; // number of function calls
   arglist[1] = 0.01; // tolerance
   min -> ExecuteCommand("MIGRAD", arglist, 2);
   
@@ -178,7 +178,7 @@ void skimmer::getTrackInfo(){
   float distance = 0.0;
 
   for (unsigned int iPoint = 0; iPoint < npoints; iPoint++){
-    TVector3 position (col[iPoint], row[iPoint], bcid[iPoint]);
+    TVector3 position (col[iPoint]*250.0, row[iPoint]*50.0, bcid[iPoint]*250.0);
     TVector3 position_vect = position - initial_position;
     distance = unit_direction * position_vect;
     if (distance < min_distance) min_distance = distance;
@@ -303,6 +303,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
    //dtr->SetBranchStatus("MicrotpcDataHits_m_tot",1);
 
    //// Make new TTree with relevant data
+   tr->Branch("event",&event,"event/I");
    tr->Branch("npoints",&npoints,"npoints/I");
    tr->Branch("row",&row,"row[npoints]/I");
    tr->Branch("col",&col,"col[npoints]/I");
@@ -331,6 +332,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
    cout << "\n\n\n" << "Number of entries = " << nentries << "\n\n\n" << endl;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
+	  event = jentry;
 	  alpha = 0;
 	  neutron = 0;
 	  xray = 0;
@@ -439,7 +441,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  //Delete track
 	  m_gr->Delete();
 
-	  //if (jentry > 999) break;
+	  if (jentry > 10000) break;
    }
    cout << "Does it make it this far?" << endl;
    tr->Write();

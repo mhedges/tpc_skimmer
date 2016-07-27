@@ -41,6 +41,7 @@ private :
 	int nrows = 336;
 	int ncol = 80;
 	int kMaxHits = nrows * ncol;
+	int event;
 
 	int row[30000];
 	int col[30000];
