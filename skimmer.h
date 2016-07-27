@@ -60,6 +60,8 @@ private :
 	
 	double vectors[30000][3];
 	double c_vector[3];
+	double c_rms;
+	double distances[30000];
 
 	double tstamp;
 

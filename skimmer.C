@@ -326,9 +326,10 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("other",&other,"other/I");
    tr->Branch("vectors",&vectors,"vectors[npoints][3]/D");
    tr->Branch("c_vector",&c_vector,"c_vector[3]/D");
+   tr->Branch("c_rms",&c_rms,"c_rms/D");
    //tr->Branch("xray",&xray,"xray/b");
 
-   //tr->Branch("distances",&distances,"distances[npoints]/D");
+   tr->Branch("distances",&distances,"distances[npoints]/D");
 
    int nentries = dtr->GetEntriesFast();
 
@@ -370,7 +371,6 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
 		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
 		
-		m_gr->SetPoint(pixn, x, y, z);
 
 		vectors[pixn][0] = x;
 		vectors[pixn][1] = y;
@@ -385,23 +385,50 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  c_vector[1] /= npoints;
 	  c_vector[2] /= npoints;
 
+	  TVector3 centroid(c_vector[0],c_vector[1],c_vector[2]);
+	  
+	  // Calculate RMS of points from centroid
+	  double c_rms2 = 0.0;
+	  for (int i=0; i<npoints;i++){
+		x = vectors[i][0];
+		y = vectors[i][1];
+		z = vectors[i][2];
+		TVector3 temp(x,y,z);
+		c_rms2 += (centroid - temp).Mag2();
+		
+		// Get the distance from the centroid
+		TVector3 t(centroid - temp);
+		distances[i]=t.Mag();
+
+	  }
+	  c_rms2 /= npoints;
+	  c_rms = TMath::Power(c_rms2, 0.5);
 
 	  getHitside();
 	  
 	  //Call fitter 
-	  if ((hitside == 11 || hitside == 0) && (npoints > 20) && (tot_sum > 100)){
-	     fitTrack();
+	  if ((hitside == 11 || hitside == 0) && (npoints > 20) && (tot_sum > 25)){
 
 		 if (hitside == 11) alpha = 1;
 		 if (hitside == 0) neutron = 1;
 
 	     double x2,y2,z2;
-	     for (int i  = 0; i < npoints; ++i) {
+		 double sigma;
+	     for (int i = 0; i < npoints; ++i) {
+		   //cout << "Does it make it this far?" << endl;
+		   // Reject outliers of distance/c_rms > 7 sigma
+		   sigma = distances[i]/c_rms;
+		   if (sigma > 7.0) {
+		     continue;
+		   }
 		   // Calculate x, y, z positions in microns 
 	       x2 = static_cast<double>(col[i]*250.0); 
 	       y2 = static_cast<double>(row[i]*50.0);
 	       z2 = static_cast<double>(bcid[i]*250.0);
+
+		   m_gr->SetPoint(i, x2, y2, z2);
 		 }
+	     fitTrack();
 	  }
 
 	  else {
@@ -426,15 +453,13 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		 //}
 	  }
 	  
-	  //cout << "\n\n\n" << "Number of outliers = " << rejects.size() << "\n\n\n" << endl;
-	  
 	  //Fill tree
 	  tr->Fill();
 
 	  //Delete track
 	  m_gr->Delete();
 
-	  if (jentry > 5000) break;
+	  //if (jentry > 5000) break;
    }
    tr->Write();
    ofile->Write();
