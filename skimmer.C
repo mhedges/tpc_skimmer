@@ -402,8 +402,6 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  //Call fitter 
 	  if ((hitside == 11 || hitside == 0) && (npoints > 20 && tot_sum > 25)){
 
-		 //if (hitside == 11) alpha = 1;
-
 	     if (hitside == 11 && MicrotpcRecoTracks_m_partID[0][4] == 1) top_alpha = 1;
 		 else if (hitside == 11 && MicrotpcRecoTracks_m_partID[0][3] == 1) bottom_alpha = 1;
 	     double x2,y2,z2;
@@ -411,12 +409,12 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	     for (int i = 0; i < npoints; ++i) {
 
 		   // Reject outliers of distance/c_rms > 4 sigma
+
 		   sigma = distances[i]/c_rms;
 		   if (sigma > 4.0) {
-			 //tot[i] = 0.;
 			 tot_sum -= tot[i];
-		     //continue;
 		   }
+
 		   else if (sigma < 4.0) {
 		   // Calculate x, y, z positions in microns 
 	       x2 = static_cast<double>(col[i]*250.0); 
