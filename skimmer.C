@@ -18,15 +18,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include <algorithm>
-//#include <thread>
 #include <iostream>
 #include <algorithm>
 #include <vector>
 #include <sys/time.h>
 
-//#include "constants.h"
-
-//#include "cantProceed.h"
 #include "TROOT.h"
 #include "TGraph2D.h"
 #include "TMath.h"
@@ -55,7 +51,6 @@ void skimmer::fitTrack() {
 
   
   for (int ii=0; ii<npoints; ii++){
-	  //cout << "\n\n\n" << x_vals[ii] << "    " << y_vals[ii] << "    " << z_vals[ii] << endl;
 
 	if ( x_vals[ii] == m_gr->GetXmax() )
 	  x_max_index = ii;
@@ -117,7 +112,6 @@ void skimmer::fitTrack() {
   theta = par_fit[3]*180./3.14159;
   
   getTrackInfo();
-  //getPID(); // Set PID flags
 
   double amin, edm, errdef;
   int npar, nparx;
@@ -177,8 +171,12 @@ void skimmer::getTrackInfo(){
   float max_distance = -1e+30;
   float distance = 0.0;
 
-  for (unsigned int iPoint = 0; iPoint < npoints; iPoint++){
-    TVector3 position (col[iPoint]*250.0, row[iPoint]*50.0, bcid[iPoint]*250.0);
+  double * X = m_gr->GetX();
+  double * Y = m_gr->GetY();
+  double * Z = m_gr->GetZ();
+  int ipoints = m_gr->GetN();
+  for (unsigned int iPoint = 0; iPoint < ipoints; iPoint++){
+    TVector3 position (X[iPoint], Y[iPoint], Z[iPoint]);
     TVector3 position_vect = position - initial_position;
     distance = unit_direction * position_vect;
     if (distance < min_distance) min_distance = distance;
@@ -202,7 +200,10 @@ void skimmer::getTrackInfo(){
 }
 
 void skimmer::getHitside(){
-  // Get Hitside information
+  
+  // Get Hitside information.  This is a 4 digit number. 1111 is all edges, 0 is
+  // no edges.  Order is top, bottom, right, left.  11 is alpha from sources.
+
   int cut_dim = 500; //um (it should be 250*integer)
   int set_edge_row_up = 335-cut_dim/250*5, set_edge_row_dw = cut_dim/250*5;
   int set_edge_col_up = 79-cut_dim/250, set_edge_col_dw = cut_dim/250;
@@ -273,11 +274,9 @@ void skimmer::getHitside(){
 void skimmer::Loop(TString FileName, TString OutputName)
 {
    TFile df(FileName,"READ");
-   //
+
    // Get the TTree
    TTree *dtr = (TTree*)df.Get("tree");
-
-   //TFile *ofile = new TFile("tpc_data.root", "RECREATE");
 
    TFile *ofile = new TFile(OutputName, "RECREATE");
    TTree *tr = new TTree("tr","TPC Event Data");
@@ -287,20 +286,6 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
    //// Activate all TBranches
    dtr->SetBranchStatus("*",1);
-
-   //dtr->SetBranchStatus("MicrotpcMetaHits_m_pixNb",1);
-   //dtr->SetBranchStatus("MicrotpcMetaHits_m_ts_start",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_totsum",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_time_range",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_chi2",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_trl",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_theta",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_phi",1);
-   //dtr->SetBranchStatus("MicrotpcRecoTracks_m_esum",1);
-   //dtr->SetBranchStatus("MicrotpcDataHits_m_column",1);
-   //dtr->SetBranchStatus("MicrotpcDataHits_m_row",1);
-   //dtr->SetBranchStatus("MicrotpcDataHits_m_BCID",1);
-   //dtr->SetBranchStatus("MicrotpcDataHits_m_tot",1);
 
    //// Make new TTree with relevant data
    tr->Branch("event",&event,"event/I");
@@ -315,36 +300,43 @@ void skimmer::Loop(TString FileName, TString OutputName)
    tr->Branch("time_range",&time_range,"time_range/I");
    tr->Branch("chi2",&chi2,"chi2/F");
    tr->Branch("t_length",&t_length,"t_length/D");
+   tr->Branch("de_dx",&de_dx,"de_dx/D");
    tr->Branch("theta",&theta,"theta/D");
    tr->Branch("phi",&phi,"phi/D");
    tr->Branch("par_fit",&par_fit,"par_fit[6]/D");
    tr->Branch("par_fit_err",&par_fit_err,"par_fit_err[6]/D");
    tr->Branch("hitside",&hitside,"hitside/s");
    tr->Branch("impact_pars",&impact_pars,"impact_pars[4]/F");
-   tr->Branch("alpha",&alpha,"alpha/I");
+   tr->Branch("top_alpha",&top_alpha,"top_alpha/I");
+   tr->Branch("bottom_alpha",&bottom_alpha,"bottom_alpha/I");
+   tr->Branch("xray",&xray,"xray/I");
    tr->Branch("neutron",&neutron,"neutron/I");
+   tr->Branch("proton",&proton,"proton/I");
    tr->Branch("other",&other,"other/I");
    tr->Branch("vectors",&vectors,"vectors[npoints][3]/D");
    tr->Branch("c_vector",&c_vector,"c_vector[3]/D");
    tr->Branch("c_rms",&c_rms,"c_rms/D");
-   //tr->Branch("xray",&xray,"xray/b");
-
    tr->Branch("distances",&distances,"distances[npoints]/D");
-
+   tr->Branch("detnb",&detnb,"detnb/I");
+   
    int nentries = dtr->GetEntriesFast();
-
    cout << "\n\n\n" << "Number of entries = " << nentries << "\n\n\n" << endl;
+
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 
 	  event = jentry;
-	  alpha = 0;
+	  detnb = MicrotpcMetaHits_m_detNb[0];
+
 	  neutron = 0;
+	  top_alpha = 0;
+	  bottom_alpha = 0;
 	  xray = 0;
 	  other = 0;
-
+	  proton = 0;
+	  
 	  m_gr = new TGraph2D();
 
-      if (jentry %100 == 0) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
+      if (jentry %1000 == 0) cout << "\n\n\n\nEvent Counter: " << jentry << endl;
 
       Long64_t ientry = LoadTree(jentry);
 
@@ -352,13 +344,14 @@ void skimmer::Loop(TString FileName, TString OutputName)
 
 	  npoints = MicrotpcMetaHits_m_pixNb[0];
 	  tstamp = MicrotpcMetaHits_m_ts_start[0][0];
-	  tot_sum = MicrotpcRecoTracks_m_totsum[0];
 	  time_range = MicrotpcRecoTracks_m_time_range[0];
       sum_e = MicrotpcRecoTracks_m_esum[0];
+	  xray= MicrotpcRecoTracks_m_partID[0][0];
 	  
 	  double x,y,z;
 
-	  //TVector3 centroid(0,0,0);
+	  tot_sum = 0;
+
       for (int pixn=0; pixn<npoints;pixn++) {
 		col[pixn]=static_cast<int>(MicrotpcDataHits_m_column[pixn]);
 		x = static_cast<double>(col[pixn]*250.0); 
@@ -370,7 +363,7 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		z = static_cast<double>(bcid[pixn]*250.0);
 
 		tot[pixn]=MicrotpcDataHits_m_TOT[pixn];
-		
+		tot_sum += tot[pixn];
 
 		vectors[pixn][0] = x;
 		vectors[pixn][1] = y;
@@ -407,33 +400,45 @@ void skimmer::Loop(TString FileName, TString OutputName)
 	  getHitside();
 	  
 	  //Call fitter 
-	  if ((hitside == 11 || hitside == 0) && (npoints > 20) && (tot_sum > 25)){
+	  if ((hitside == 11 || hitside == 0) && (npoints > 20 && tot_sum > 25)){
 
-		 if (hitside == 11) alpha = 1;
-		 if (hitside == 0) neutron = 1;
+		 //if (hitside == 11) alpha = 1;
 
+	     if (hitside == 11 && MicrotpcRecoTracks_m_partID[0][4] == 1) top_alpha = 1;
+		 else if (hitside == 11 && MicrotpcRecoTracks_m_partID[0][3] == 1) bottom_alpha = 1;
 	     double x2,y2,z2;
 		 double sigma;
 	     for (int i = 0; i < npoints; ++i) {
-		   //cout << "Does it make it this far?" << endl;
-		   // Reject outliers of distance/c_rms > 7 sigma
+
+		   // Reject outliers of distance/c_rms > 4 sigma
 		   sigma = distances[i]/c_rms;
-		   if (sigma > 7.0) {
-		     continue;
+		   if (sigma > 4.0) {
+			 //tot[i] = 0.;
+			 tot_sum -= tot[i];
+		     //continue;
 		   }
+		   else if (sigma < 4.0) {
 		   // Calculate x, y, z positions in microns 
 	       x2 = static_cast<double>(col[i]*250.0); 
 	       y2 = static_cast<double>(row[i]*50.0);
 	       z2 = static_cast<double>(bcid[i]*250.0);
 
-		   m_gr->SetPoint(i, x2, y2, z2);
+		   int n1 = m_gr->GetN();
+
+		   m_gr->SetPoint(n1, x2, y2, z2);
+		   }
 		 }
 	     fitTrack();
+		 de_dx = tot_sum/t_length;
+		 if (de_dx > 0.08 && hitside == 0) neutron = 1;
+		 else if (de_dx < 0.08 && npoints >= 40) proton = 1;
 	  }
 
+
 	  else {
-		 // Reset fit variables to 0 if track is not passed to fit function
 		 other = 1;
+		
+		 // Reset fit variables to 0 if track is not passed to fit function
 	     chi2 = 0.;
 	     theta = 0.;
 	     phi = 0.;
@@ -446,11 +451,6 @@ void skimmer::Loop(TString FileName, TString OutputName)
 		 for (int n=0; n<4; n++){
 	   	    impact_pars[n] = 0.;
 		 }
-
-
-	     //for (int k=0; k<npoints; k++){
-	     //   distances[k] = 0.;
-		 //}
 	  }
 	  
 	  //Fill tree
@@ -467,11 +467,9 @@ void skimmer::Loop(TString FileName, TString OutputName)
 }
 
 
-//int main()
 int main(int argc, char * argv[])
 {
   skimmer s;
-  //s.Loop("tpc4_th50_data_1463360400.root","test.root");
   s.Loop(argv[1], argv[2]);
   return 1;
 }

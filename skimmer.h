@@ -42,13 +42,14 @@ private :
 	int ncol = 80;
 	int kMaxHits = nrows * ncol;
 	int event;
+	int detnb;
 
 	int row[30000];
 	int col[30000];
 	int tot[30000];
 	int bcid[30000];
 
-	int alpha, neutron, xray, other;
+	Int_t top_alpha, bottom_alpha, neutron, xray, other, proton;
 
 	unsigned short hitside;
 
@@ -56,7 +57,7 @@ private :
 
 	double par_fit[6];
 	double par_fit_err[6];
-	double chi2, t_length, theta, phi, sum_e;
+	double chi2, t_length, theta, phi, sum_e, de_dx;
 	
 	double vectors[30000][3];
 	double c_vector[3];
