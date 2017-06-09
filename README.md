@@ -1,3 +1,5 @@
+**** NOTE: This repository was changed to the tpc_refitter repository after I migrated my physics work to the DESY BitBucket service for Belle II.  Therefore, this package is obsolete.  It is being kept for history and version control, but is no longer used ********
+
 TPC Data Skimmer:
 
 This is a program written to handle the BASF2 output ntuples produced by Igal
